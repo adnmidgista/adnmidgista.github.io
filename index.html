@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADN Midgista | Automovilismo</title>
+  <meta name="description" content="Resultados, calendario, posiciones e historia del automovilismo.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ BARRA SUPERIOR ============ -->
+  <header class="barra">
+    <a class="logo" href="#inicio" aria-label="ADN Midgista, ir al inicio">
+      <img id="logo-img" alt="ADN Midgista">
+      <span id="logo-texto" class="logo-texto" hidden>ADN Midgista</span>
+    </a>
+
+    <button class="menu-boton" id="menu-boton" aria-expanded="false" aria-controls="menu">
+      <span class="sr-only">Abrir menú</span>
+      <span class="menu-icono" aria-hidden="true"></span>
+    </button>
+
+    <nav class="menu" id="menu" aria-label="Secciones">
+      <a href="#inicio">Inicio</a>
+      <a href="#calendario">Calendario</a>
+      <a href="#resultados">Resultados</a>
+      <a href="#posiciones">Posiciones</a>
+      <a href="#estadisticas">Estadísticas</a>
+    </nav>
+
+    <div class="redes-bloque">
+      <strong>Seguinos</strong>
+      <span id="redes"></span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ PORTADA ============ -->
+    <section class="portada" id="inicio"></section>
+
+    <!-- ============ CALENDARIO ============ -->
+    <section class="seccion" id="calendario">
+      <div class="contenedor">
+        <h2 class="seccion-titulo">Calendario</h2>
+        <p class="seccion-sub" id="calendario-sub"></p>
+        <div class="calendario-grilla" id="calendario-lista"></div>
+      </div>
+    </section>
+
+    <!-- ============ RESULTADOS ============ -->
+    <section class="seccion seccion-gris" id="resultados">
+      <div class="contenedor">
+        <h2 class="seccion-titulo">Resultados</h2>
+        <div class="selector">
+          <label for="resultados-selector">Fecha</label>
+          <select id="resultados-selector"></select>
+        </div>
+        <div id="resultados-contenido"></div>
+      </div>
+    </section>
+
+    <!-- ============ POSICIONES ============ -->
+    <section class="seccion" id="posiciones">
+      <div class="contenedor">
+        <h2 class="seccion-titulo">Posiciones</h2>
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Pos</th>
+                <th scope="col">Piloto</th>
+                <th scope="col" class="num">Pts</th>
+              </tr>
+            </thead>
+            <tbody id="posiciones-cuerpo"></tbody>
+          </table>
+        </div>
+        <ul class="leyenda" aria-label="Referencias de colores">
+          <li>
+            <span class="leyenda-color leyenda-oro"></span>
+            <span><strong>Dorado (puestos 1 a 12):</strong> clasifican a los Playoffs y a la Copa de Oro 2027.</span>
+          </li>
+          <li>
+            <span class="leyenda-color leyenda-roja"></span>
+            <span><strong>Rojo (puestos 13 a 38):</strong> clasifican a la Copa de Oro 2027.</span>
+          </li>
+          <li>
+            <span class="leyenda-color leyenda-plata"></span>
+            <span><strong>Blanco (resto):</strong> clasifican a la Copa de Plata 2027.</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ ESTADÍSTICAS ============ -->
+    <section class="seccion seccion-gris" id="estadisticas">
+      <div class="contenedor">
+        <h2 class="seccion-titulo">Estadísticas</h2>
+        <div id="estadisticas-contenido"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ PIE ============ -->
+  <footer class="pie">
+    <div class="contenedor pie-fila">
+      <span id="pie-nombre"></span>
+      <span id="pie-anio"></span>
+    </div>
+  </footer>
+
+  <!-- ============ PERFIL DE PILOTO (ventana emergente) ============ -->
+  <dialog class="perfil" id="perfil" aria-labelledby="perfil-nombre">
+    <div class="perfil-cabecera">
+      <h2 id="perfil-nombre"></h2>
+      <button type="button" class="perfil-cerrar" id="perfil-cerrar" aria-label="Cerrar perfil">✕</button>
+    </div>
+    <div class="perfil-caja" id="perfil-contenido"></div>
+  </dialog>
+
+  <!-- Los datos van primero, después el código que los dibuja -->
+  <script src="datos.js"></script>
+  <script>
+    (function () {
+      const D = DATOS;
+      const $ = (id) => document.getElementById(id);
+
+      // Evita que un texto con símbolos rompa el HTML
+      const esc = (t) => String(t).replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+      const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+      // Se parte el texto a mano para evitar corrimientos por zona horaria
+      const partes = (iso) => { const [a, m, d] = iso.split("-").map(Number); return { a, m, d }; };
+      const fechaCorta = (iso) => { const p = partes(iso); return `${p.d} ${MESES[p.m - 1]} ${p.a}`; };
+
+      /* ----- Logo (si falta la imagen, muestra el nombre) ----- */
+      const logo = $("logo-img");
+      logo.src = D.sitio.logo;
+      logo.addEventListener("error", () => { logo.hidden = true; $("logo-texto").hidden = false; });
+
+      /* ----- Redes ----- */
+      $("redes").innerHTML = D.sitio.redes
+        .map((r) => `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.nombre)}</a>`)
+        .join("");
+
+      /* ----- Portada ----- */
+      document.querySelector(".portada").style.setProperty("--portada", `url("${D.portada.imagen}")`);
+
+      /* ----- Calendario ----- */
+      $("calendario-sub").textContent = D.sitio.campeonato;
+      const hoy = new Date().toISOString().slice(0, 10);
+      const proxima = D.calendario.find((c) => c.fecha >= hoy);
+      $("calendario-lista").innerHTML = D.calendario.map((c, i) => {
+        const p = partes(c.fecha);
+        const esProxima = c === proxima;
+        const terminada = c.fecha < hoy;
+        return `
+          <article class="carrera${esProxima ? " carrera-proxima" : ""}${terminada ? " carrera-terminada" : ""}">
+            <div class="carrera-fecha">
+              <span class="carrera-dia">${p.d}</span>
+              <span class="carrera-mes">${MESES[p.m - 1]}</span>
+            </div>
+            <div class="carrera-info">
+              <h3>${esc(c.carrera)}</h3>
+              ${esProxima ? '<span class="etiqueta">Próxima carrera</span>' : ""}
+              ${terminada ? '<span class="etiqueta etiqueta-gris">Finalizada</span>' : ""}
+            </div>
+          </article>`;
+      }).join("");
+
+      /* =====================================================
+         RESULTADOS, POSICIONES, ESTADÍSTICAS Y PERFILES
+         Todo se calcula solo a partir de lo que cargás en datos.js
+         ===================================================== */
+      const TIPOS = {
+        serie: "Serie", repechaje: "Repechaje", semifinal: "Semifinal",
+        prefinal: "Prefinal", final: "Final"
+      };
+      const ORDEN_TIPOS = ["serie", "repechaje", "semifinal", "prefinal", "final"];
+      const ESTADOS = { NL: "No largó", NT: "No terminó" };
+      const VICTORIAS_EN = D.victoriasEn || ["final"];
+
+      const puntosPor = (tipo, indice) => (D.puntaje[tipo] || [])[indice] || 0;
+      const formatoPts = (n) => n.toLocaleString("es-AR", { maximumFractionDigits: 2 });
+      const porNombre = (a, b) => a.localeCompare(b, "es");
+
+      // "3:12.450" o "52,3" pasa a segundos. Si no es un tiempo válido, devuelve null.
+      const aSegundos = (t) => {
+        const texto = String(t === undefined || t === null ? "" : t).trim();
+        if (!/^(\d+:){0,2}\d+([.,]\d+)?$/.test(texto)) return null;
+        return texto.split(":").reduce((acc, parte) => acc * 60 + parseFloat(parte.replace(",", ".")), 0);
+      };
+
+      const nombreLink = (n) =>
+        `<button type="button" class="enlace-piloto" data-piloto="${esc(n)}">${esc(n)}</button>`;
+
+      /* ----- Una fila por piloto y por carrera ----- */
+      const registros = [];
+      D.resultados.forEach((r, iFecha) => {
+        r.sesiones.forEach((s, iSesion) => {
+          const estadoDe = (e) => String(e.estado || "").trim().toUpperCase();
+          const rango = (e) => (estadoDe(e) === "NL" ? 1 : estadoDe(e) === "NT" ? 2 : 0);
+          const entradas = s.orden
+            .map((e) => (typeof e === "string" ? { piloto: e } : e))
+            .filter((e) => e && e.piloto);
+          let pos = 0;
+          // Primero los que terminaron (en el orden cargado), después NL y NT
+          entradas.slice().sort((a, b) => rango(a) - rango(b)).forEach((e) => {
+            const sinPuntos = rango(e) !== 0;
+            if (!sinPuntos) pos += 1;
+            registros.push({
+              piloto: e.piloto.trim(),
+              fecha: r.fecha, iFecha, iSesion,
+              tipo: s.tipo,
+              sesion: s.nombre || TIPOS[s.tipo],
+              pos: sinPuntos ? null : pos,
+              estado: sinPuntos ? estadoDe(e) : null,
+              tiempo: sinPuntos ? "" : (e.tiempo || ""),
+              segundos: sinPuntos ? null : aSegundos(e.tiempo),
+              puntos: sinPuntos ? 0 : puntosPor(s.tipo, pos - 1)
+            });
+          });
+        });
+      });
+
+      const celdaPos = (g, sufijo) => g.estado
+        ? `<abbr class="estado" title="${ESTADOS[g.estado]}">${g.estado}</abbr>`
+        : g.pos + (sufijo || "");
+
+      /* ----- Resultados ----- */
+      const selector = $("resultados-selector");
+      const contenido = $("resultados-contenido");
+
+      function mostrarResultado(i) {
+        const r = D.resultados[i];
+        const sesiones = r.sesiones
+          .map((s, iS) => ({ s, iS }))
+          .sort((a, b) => ORDEN_TIPOS.indexOf(a.s.tipo) - ORDEN_TIPOS.indexOf(b.s.tipo));
+        contenido.innerHTML = sesiones.map(({ s, iS }) => {
+          const filas = registros.filter((g) => g.iFecha === i && g.iSesion === iS);
+          return `
+            <h3 class="sesion-titulo">${esc(s.nombre || TIPOS[s.tipo])}</h3>
+            <div class="tabla-caja">
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th scope="col">Pos</th><th scope="col">Piloto</th>
+                    <th scope="col">Tiempo</th><th scope="col" class="num">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filas.map((g) => `
+                    <tr>
+                      <td class="pos">${celdaPos(g)}</td>
+                      <td><strong>${nombreLink(g.piloto)}</strong></td>
+                      <td>${g.tiempo ? esc(g.tiempo) : "–"}</td>
+                      <td class="num">${formatoPts(g.puntos)}</td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`;
+        }).join("");
+      }
+
+      if (D.resultados.length === 0) {
+        document.querySelector(".selector").style.display = "none";
+        contenido.innerHTML = '<p class="vacio">La temporada todavía no comenzó. Los resultados se publican acá después de cada fecha.</p>';
+      } else {
+        selector.innerHTML = D.resultados.map((r, i) => {
+          const cal = D.calendario.find((c) => c.fecha === r.fecha);
+          return `<option value="${i}">${fechaCorta(r.fecha)}${cal ? " – " + esc(cal.carrera) : ""}</option>`;
+        }).join("");
+        selector.addEventListener("change", () => mostrarResultado(Number(selector.value)));
+        mostrarResultado(0);
+      }
+
+      /* ----- Posiciones (se calculan solas con los resultados) ----- */
+      const pilotos = {};
+      registros.forEach((g) => {
+        const p = pilotos[g.piloto] || (pilotos[g.piloto] = { nombre: g.piloto, puntos: 0, victorias: 0 });
+        p.puntos += g.puntos;
+        if (g.pos === 1 && VICTORIAS_EN.includes(g.tipo)) p.victorias += 1;
+      });
+
+      const ranking = Object.values(pilotos)
+        .sort((a, b) => b.puntos - a.puntos || porNombre(a.nombre, b.nombre));
+
+      if (ranking.length === 0) {
+        $("posiciones-cuerpo").innerHTML =
+          '<tr><td colspan="3">La temporada todavía no comenzó.</td></tr>';
+      } else {
+        let anterior = null, posActual = 0;
+        $("posiciones-cuerpo").innerHTML = ranking.map((p, i) => {
+          if (p.puntos !== anterior) { posActual = i + 1; anterior = p.puntos; }
+          p.puesto = posActual;
+          const zona = posActual <= D.zonas.oro ? "zona-oro"
+                     : posActual <= D.zonas.rojo ? "zona-roja"
+                     : "zona-plata";
+          return `
+            <tr class="${zona}">
+              <td class="pos">${posActual}</td>
+              <td>
+                <strong>${nombreLink(p.nombre)}</strong>
+                <span class="victorias${p.victorias ? "" : " victorias-cero"}" title="Victorias">🏆 ${p.victorias}</span>
+              </td>
+              <td class="num">${formatoPts(p.puntos)}</td>
+            </tr>`;
+        }).join("");
+      }
+
+      /* ----- Estadísticas ----- */
+      const tarjeta = (titulo, cabecera, filas) => {
+        const columnas = (cabecera.match(/<th/g) || []).length;
+        return `
+          <div class="stat">
+            <h4 class="stat-titulo">${titulo}</h4>
+            <div class="tabla-caja">
+              <table class="tabla">
+                <thead><tr>${cabecera}</tr></thead>
+                <tbody>${filas || `<tr><td colspan="${columnas}">Todavía no hay datos.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </div>`;
+      };
+
+      // Los 10 mejores tiempos de cada tipo de carrera (ignora NL, NT y tiempos que no se pueden leer)
+      const TITULO_RAPIDOS = {
+        serie: "Las 10 series más rápidas",
+        repechaje: "Los 10 repechajes más rápidos",
+        semifinal: "Las 10 semifinales más rápidas",
+        prefinal: "Las 10 prefinales más rápidas",
+        final: "Las 10 finales más rápidas"
+      };
+      const tarjetaRapidos = (tipo) => {
+        const filas = registros
+          .filter((g) => g.tipo === tipo && g.segundos !== null)
+          .sort((a, b) => a.segundos - b.segundos)
+          .slice(0, 10)
+          .map((g, k) => `
+            <tr>
+              <td class="pos">${k + 1}</td>
+              <td><strong>${nombreLink(g.piloto)}</strong>
+                  <small>${fechaCorta(g.fecha)} · ${esc(g.sesion)}</small></td>
+              <td class="num">${esc(g.tiempo)}</td>
+            </tr>`).join("");
+        return tarjeta(TITULO_RAPIDOS[tipo],
+          '<th scope="col">#</th><th scope="col">Piloto</th><th scope="col" class="num">Tiempo</th>', filas);
+      };
+
+      // Ranking de victorias (1° puestos) por tipo de carrera
+      const TITULO_GANADAS = {
+        serie: "Más series ganadas",
+        semifinal: "Más semifinales ganadas",
+        repechaje: "Más repechajes ganados",
+        prefinal: "Más prefinales ganadas"
+      };
+      const tarjetaGanadas = (tipo) => {
+        const cuenta = {};
+        registros.filter((g) => g.tipo === tipo && g.pos === 1)
+          .forEach((g) => { cuenta[g.piloto] = (cuenta[g.piloto] || 0) + 1; });
+        const filas = Object.entries(cuenta)
+          .sort((a, b) => b[1] - a[1] || porNombre(a[0], b[0]))
+          .slice(0, 10)
+          .map(([nombre, n], k) => `
+            <tr>
+              <td class="pos">${k + 1}</td>
+              <td><strong>${nombreLink(nombre)}</strong></td>
+              <td class="num">${n}</td>
+            </tr>`).join("");
+        return tarjeta(TITULO_GANADAS[tipo],
+          '<th scope="col">#</th><th scope="col">Piloto</th><th scope="col" class="num">Victorias</th>', filas);
+      };
+
+      // Podios en la Final (1°, 2° y 3°)
+      const podios = {};
+      const medalla = ["", "oro", "plata", "bronce"];
+      registros.filter((g) => g.tipo === "final" && g.pos && g.pos <= 3).forEach((g) => {
+        const p = podios[g.piloto] || (podios[g.piloto] = { nombre: g.piloto, oro: 0, plata: 0, bronce: 0 });
+        p[medalla[g.pos]] += 1;
+      });
+      const filasPodios = Object.values(podios)
+        .map((p) => ({ ...p, total: p.oro + p.plata + p.bronce }))
+        .sort((a, b) => b.total - a.total || b.oro - a.oro || b.plata - a.plata || porNombre(a.nombre, b.nombre))
+        .slice(0, 10)
+        .map((p, k) => `
+          <tr>
+            <td class="pos">${k + 1}</td>
+            <td><strong>${nombreLink(p.nombre)}</strong></td>
+            <td class="num">🥇 ${p.oro}</td><td class="num">🥈 ${p.plata}</td><td class="num">🥉 ${p.bronce}</td>
+            <td class="num">${p.total}</td>
+          </tr>`).join("");
+
+      $("estadisticas-contenido").innerHTML = `
+        <h3 class="stats-grupo">Los más rápidos de la temporada</h3>
+        <div class="stats-grilla">
+          ${["serie", "repechaje", "semifinal", "prefinal", "final"].map(tarjetaRapidos).join("")}
+        </div>
+        <h3 class="stats-grupo">Los más ganadores</h3>
+        <div class="stats-grilla">
+          ${tarjeta("Más podios en la Final",
+            '<th scope="col">#</th><th scope="col">Piloto</th><th scope="col" class="num">1°</th><th scope="col" class="num">2°</th><th scope="col" class="num">3°</th><th scope="col" class="num">Podios</th>',
+            filasPodios)}
+          ${["serie", "semifinal", "repechaje", "prefinal"].map(tarjetaGanadas).join("")}
+        </div>`;
+
+      /* ----- Perfil de cada piloto ----- */
+      const dialogo = $("perfil");
+
+      function abrirPerfil(nombre) {
+        const p = pilotos[nombre];
+        if (!p) return;
+        const mios = registros.filter((g) => g.piloto === nombre);
+
+        const porFecha = {};
+        mios.forEach((g) => (porFecha[g.iFecha] = porFecha[g.iFecha] || []).push(g));
+
+        const bloques = Object.keys(porFecha).map(Number)
+          .sort((a, b) => D.resultados[a].fecha.localeCompare(D.resultados[b].fecha))
+          .map((iF) => {
+            const filas = porFecha[iF].slice().sort((a, b) =>
+              ORDEN_TIPOS.indexOf(a.tipo) - ORDEN_TIPOS.indexOf(b.tipo) || a.iSesion - b.iSesion);
+            const ptsFecha = filas.reduce((suma, g) => suma + g.puntos, 0);
+            const fecha = D.resultados[iF].fecha;
+            const cal = D.calendario.find((c) => c.fecha === fecha);
+            return `
+              <h3 class="sesion-titulo">${fechaCorta(fecha)}${cal ? " – " + esc(cal.carrera) : ""}
+                <span class="perfil-pts">${formatoPts(ptsFecha)} pts</span></h3>
+              <div class="tabla-caja">
+                <table class="tabla">
+                  <thead>
+                    <tr>
+                      <th scope="col">Carrera</th><th scope="col">Pos</th>
+                      <th scope="col">Tiempo</th><th scope="col" class="num">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${filas.map((g) => `
+                      <tr>
+                        <td>${esc(g.sesion)}</td>
+                        <td class="pos">${celdaPos(g, "°")}</td>
+                        <td>${g.tiempo ? esc(g.tiempo) : "–"}</td>
+                        <td class="num">${formatoPts(g.puntos)}</td>
+                      </tr>`).join("")}
+                  </tbody>
+                </table>
+              </div>`;
+          }).join("");
+
+        $("perfil-nombre").textContent = nombre;
+        $("perfil-contenido").innerHTML = `
+          <div class="perfil-resumen">
+            <div class="perfil-dato"><strong>${p.puesto}°</strong><span>Posición</span></div>
+            <div class="perfil-dato"><strong>${formatoPts(p.puntos)}</strong><span>Puntos</span></div>
+            <div class="perfil-dato"><strong>🏆 ${p.victorias}</strong><span>Victorias</span></div>
+          </div>
+          ${bloques}`;
+        dialogo.showModal();
+      }
+
+      document.addEventListener("click", (e) => {
+        const boton = e.target.closest(".enlace-piloto");
+        if (boton) abrirPerfil(boton.dataset.piloto);
+      });
+      $("perfil-cerrar").addEventListener("click", () => dialogo.close());
+      dialogo.addEventListener("click", (e) => { if (e.target === dialogo) dialogo.close(); });
+
+      /* ----- Pie ----- */
+      $("pie-nombre").textContent = D.sitio.nombre;
+      $("pie-anio").textContent = "© " + new Date().getFullYear();
+
+      /* ----- Menú en celular ----- */
+      const botonMenu = $("menu-boton"), menu = $("menu");
+      botonMenu.addEventListener("click", () => {
+        const abierto = menu.classList.toggle("abierto");
+        botonMenu.setAttribute("aria-expanded", abierto);
+      });
+      menu.addEventListener("click", (e) => {
+        if (e.target.tagName === "A") {
+          menu.classList.remove("abierto");
+          botonMenu.setAttribute("aria-expanded", "false");
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
