@@ -31,6 +31,8 @@
       <a href="#resultados">Resultados</a>
       <a href="#posiciones">Posiciones</a>
       <a href="#estadisticas">Estadísticas</a>
+      <a href="#campeones">Campeones</a>
+      <a href="micromidget.html">Micromidget</a>
     </nav>
 
     <div class="redes-bloque">
@@ -103,6 +105,27 @@
       <div class="contenedor">
         <h2 class="seccion-titulo">Estadísticas</h2>
         <div id="estadisticas-contenido"></div>
+      </div>
+    </section>
+
+
+    <!-- ============ CAMPEONES HISTÓRICOS ============ -->
+    <section class="seccion" id="campeones">
+      <div class="contenedor">
+        <h2 class="seccion-titulo">Campeones históricos</h2>
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Temporada</th>
+                <th scope="col">Campeón</th>
+                <th scope="col">Club</th>
+              </tr>
+            </thead>
+            <tbody id="campeones-cuerpo"></tbody>
+          </table>
+        </div>
+        <p class="nota">Entre paréntesis, el número de título de cada campeón que ganó más de uno.</p>
       </div>
     </section>
 
@@ -471,6 +494,28 @@
       });
       $("perfil-cerrar").addEventListener("click", () => dialogo.close());
       dialogo.addEventListener("click", (e) => { if (e.target === dialogo) dialogo.close(); });
+
+      /* ----- Campeones históricos ----- */
+      // Se ordenan por temporada para contar los títulos de cada uno en orden;
+      // los que ganaron más de uno muestran el número entre paréntesis.
+      const historico = (D.campeones || []).slice()
+        .sort((a, b) => (a.temporada > b.temporada ? 1 : -1));
+      const totalTitulos = {};
+      historico.forEach((c) => { totalTitulos[c.piloto] = (totalTitulos[c.piloto] || 0) + 1; });
+      const contadorTitulos = {};
+      const filasCampeones = historico.map((c) => {
+        contadorTitulos[c.piloto] = (contadorTitulos[c.piloto] || 0) + 1;
+        return { ...c, numero: contadorTitulos[c.piloto], repite: totalTitulos[c.piloto] > 1 };
+      }).reverse(); // el más reciente arriba
+
+      $("campeones-cuerpo").innerHTML = filasCampeones.length === 0
+        ? '<tr><td colspan="3">Todavía no hay campeones cargados.</td></tr>'
+        : filasCampeones.map((c) => `
+          <tr>
+            <td class="temporada">${esc(c.temporada)}</td>
+            <td><strong>${esc(c.piloto)}</strong>${c.repite ? ` <span class="titulo-n">(${c.numero})</span>` : ""}</td>
+            <td>${esc(c.club)}</td>
+          </tr>`).join("");
 
       /* ----- Pie ----- */
       $("pie-nombre").textContent = D.sitio.nombre;

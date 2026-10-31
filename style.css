@@ -226,7 +226,7 @@ img { max-width: 100%; display: block; }
 .pie-fila span:first-child { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 
 /* ================= CELULAR ================= */
-@media (max-width: 860px) {
+@media (max-width: 1280px) {
   .logo { padding: 0 1rem; }
   .redes-bloque { display: none; }
 
@@ -371,3 +371,13 @@ body:has(dialog[open]) { overflow: hidden; }
 .perfil-dato span { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--gris-medio); }
 .perfil-pts { margin-left: .5rem; font-size: .95rem; color: var(--rojo); }
 .perfil .tabla tbody tr:first-child .pos { color: inherit; }
+
+/* ================= CAMPEONES HISTÓRICOS ================= */
+.tabla .temporada { width: 7rem; font-weight: 900; white-space: nowrap; }
+.titulo-n { margin-left: .15rem; font-weight: 700; color: var(--rojo); }
+.nota { margin-top: .75rem; font-size: .9rem; color: var(--gris-medio); }
+
+/* Menú más apretado en pantallas medianas, ahora que hay un link más */
+@media (min-width: 861px) and (max-width: 1280px) {
+  .portada { min-height: 78vh; }
+}
